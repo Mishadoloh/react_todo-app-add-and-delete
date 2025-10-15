@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
-import { ErrorMessage } from '../types/ErrorMessage';
+// eslint-disable-next-line import/extensions
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 type props = {
