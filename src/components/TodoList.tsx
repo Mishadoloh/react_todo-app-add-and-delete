@@ -2,40 +2,39 @@ import React from 'react';
 import { Todo } from '../types/Todo';
 import { TodoItem } from './TodoItem';
 
-type TodoListProps = {
-  filteredTodos?: Todo[]; // зробимо опціональним
-  onChange: (id: number, completed: boolean) => void;
-  handleDeleteTodo: (id: number) => Promise<void>;
-  tempTodo: Todo | null;
-  loadingTodos?: number[]; // теж опціонально
+type Props = {
+  todos: Todo[];
+  isLoading: boolean;
+  loadingTodoId: number[];
+  tempTodo?: Todo | null;
+  onDelete: (todoId: number) => void;
 };
 
-export const TodoList: React.FC<TodoListProps> = ({
-  filteredTodos = [],
-  onChange,
-  handleDeleteTodo,
+export const TodoList: React.FC<Props> = ({
+  todos,
+  isLoading,
+  loadingTodoId,
   tempTodo,
-  loadingTodos = [],
+  onDelete,
 }) => {
   return (
     <section className="todoapp__main" data-cy="TodoList">
-      {filteredTodos.map(todo => (
+      {todos.map(todo => (
         <TodoItem
           key={todo.id}
           todo={todo}
-          onChange={onChange}
-          handleDeleteTodo={handleDeleteTodo}
-          loading={loadingTodos.includes(todo.id)}
+          isLoading={isLoading}
+          loadingTodoId={loadingTodoId}
+          onDelete={onDelete}
         />
       ))}
 
       {tempTodo && (
         <TodoItem
-          key="temp"
           todo={tempTodo}
-          onChange={() => {}}
-          handleDeleteTodo={() => {}}
-          loading={true}
+          isLoading={isLoading}
+          loadingTodoId={loadingTodoId}
+          onDelete={onDelete}
         />
       )}
     </section>

@@ -1,5 +1,4 @@
 import { Todo } from '../types/Todo';
-// eslint-disable-next-line import/extensions
 import { client } from '../utils/fetchClient';
 
 export const USER_ID = '3455';

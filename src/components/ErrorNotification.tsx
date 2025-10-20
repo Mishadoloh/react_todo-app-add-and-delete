@@ -1,14 +1,13 @@
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
-// eslint-disable-next-line import/extensions
+import { ErrorMessage } from '../types/ErorrMessage';
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
-type props = {
+type Props = {
   errorMessage: ErrorMessage | '';
   onClearMessage: () => void;
 };
 
-export const ErrorNotification: React.FC<props> = ({
+export const ErrorNotification: React.FC<Props> = ({
   errorMessage,
   onClearMessage,
 }) => {
