@@ -1,86 +1,58 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
-
-import classNames from 'classnames';
-import React, { useState } from 'react';
+import cn from 'classnames';
 import { Todo } from '../types/Todo';
+import { useState } from 'react';
 
 type Props = {
   todo: Todo;
-  isLoading: boolean;
-  loadingTodoId: number[];
-  onDelete?: (todoId: number) => void;
+  onDelete: (postId: number) => Promise<unknown>;
+  todosInProcess: number[];
 };
 
 export const TodoItem: React.FC<Props> = ({
-  todo,
-  isLoading,
-  loadingTodoId,
+  todo: { completed, title, id },
   onDelete,
+  todosInProcess,
 }) => {
-  const [editTodoId, setEditTodoId] = useState<number | null>();
-  const [editTitle, setEditTitle] = useState(todo.title);
+  const [isChecked, setIsChecked] = useState(completed);
 
-  const handleEdit = (todoId: number) => {
-    setEditTodoId(todoId);
+  const isInProcess = todosInProcess.includes(id);
+
+  const handleChangeChecked = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsChecked(event.target.checked);
+  };
+
+  const handleDelete = () => {
+    onDelete(id);
   };
 
   return (
-    <div
-      data-cy="Todo"
-      className={classNames('todo', { 'todo completed': todo.completed })}
-    >
+    <div data-cy="Todo" className={cn('todo', { completed: isChecked })}>
       <label className="todo__status-label">
         <input
           data-cy="TodoStatus"
           type="checkbox"
           className="todo__status"
-          checked={todo.completed}
-          autoFocus
+          checked={isChecked}
+          onChange={handleChangeChecked}
         />
       </label>
 
-      {todo.id === editTodoId ? (
-        <form>
-          <input
-            data-cy="TodoTitleField"
-            type="text"
-            className="todo__title-field"
-            placeholder="Empty todo will be deleted"
-            value={editTitle}
-            onChange={e => setEditTitle(e.target.value)}
-            onBlur={() => setEditTodoId(null)}
-          />
-        </form>
-      ) : (
-        <>
-          <span
-            data-cy="TodoTitle"
-            className="todo__title"
-            onDoubleClick={() => handleEdit(todo.id)}
-          >
-            {todo.title}
-          </span>
-
-          <button
-            type="button"
-            className="todo__remove"
-            data-cy="TodoDelete"
-            onClick={() => {
-              if (onDelete) {
-                onDelete(todo.id);
-              }
-            }}
-          >
-            ×
-          </button>
-        </>
-      )}
-
-      {/* overlay will cover the todo while it is being deleted or updated */}
+      <span data-cy="TodoTitle" className="todo__title">
+        {title}
+      </span>
+      <button
+        type="button"
+        className="todo__remove"
+        data-cy="TodoDelete"
+        onClick={handleDelete}
+      >
+        ×
+      </button>
       <div
         data-cy="TodoLoader"
-        className={classNames('modal overlay', {
-          'is-active': isLoading && loadingTodoId.includes(todo.id),
+        className={cn('modal overlay', {
+          'is-active': isInProcess,
         })}
       >
         <div className="modal-background has-background-white-ter" />

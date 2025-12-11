@@ -1,210 +1,133 @@
-/* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
+import React, { useEffect, useMemo, useState } from 'react';
+import cn from 'classnames';
 
-import React, { useEffect, useRef, useState } from 'react';
+import * as todoService from './api/todos';
 import { UserWarning } from './UserWarning';
-import { getTodos, addTodo, deleteTodo, USER_ID } from './api/todos';
 import { Todo } from './types/Todo';
+import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { TodoList } from './components/TodoList';
-import { Footer } from './components/Footer';
-import { ErrorNotification } from './components/ErrorNotification';
-import { FilterType } from './types/FilterType';
+import { Filter } from './types/Filter';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>(FilterType.All);
-  const [isLoading, setIsLoading] = useState(false);
+  const [filter, setFilter] = useState<Filter>(Filter.all);
+  const [errorMessage, setErrorMessage] = useState('');
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
-  const [newTodoTitle, setNewTodoTitle] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [todosInProcess, setTodosInProcess] = useState<number[]>([]);
 
   useEffect(() => {
-    if (!USER_ID) {
-      return;
-    }
-
-    const loadTodos = async (): Promise<void> => {
-      setError(null);
-      setIsLoading(true);
-      try {
-        const fetchedTodos = await getTodos();
-
-        setTodos(fetchedTodos);
-      } catch {
-        setError('Unable to load todos');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTodos();
+    todoService
+      .getTodos()
+      .then(setTodos)
+      .catch(() => {
+        setErrorMessage('Unable to load todos');
+        setTimeout(() => setErrorMessage(''), 3000);
+      });
   }, []);
 
-  const handleAddTodo = async (title: string, focusInput: () => void) => {
-    const trimmedTitle = title.trim();
+  const addTodo = ({ userId, title, completed }: Omit<Todo, 'id'>) => {
+    setErrorMessage('');
 
-    if (!trimmedTitle) {
-      setError('Title should not be empty');
-      focusInput();
-
-      return;
-    }
-
-    setIsLoading(true);
-
-    const newTodo: Todo = {
-      id: 0,
-      userId: USER_ID,
-      title: trimmedTitle,
-      completed: false,
-      isLoading: true,
-    };
-
-    setTempTodo(newTodo);
-
-    try {
-      const createdTodo = await addTodo({
-        userId: USER_ID,
-        title: trimmedTitle,
-        completed: false,
+    return todoService
+      .postTodos({ userId, title, completed })
+      .then(newTitle => {
+        setTodos(currentTodo => [...currentTodo, newTitle]);
+      })
+      .catch(error => {
+        setErrorMessage('Unable to add a todo');
+        setTimeout(() => setErrorMessage(''), 3000);
+        throw error;
+      })
+      .finally(() => {
+        setTempTodo(null);
       });
-
-      setTodos(prevTodos => [...prevTodos, createdTodo]);
-      setNewTodoTitle('');
-      focusInput();
-    } catch {
-      setError('Unable to add a todo');
-    } finally {
-      setTempTodo(null);
-      setIsLoading(false);
-    }
   };
 
-  const handleDeleteTodo = async (todoId: number) => {
-    setTodos(prevTodos =>
-      prevTodos.map(todo =>
-        todo.id === todoId ? { ...todo, isDeleting: true } : todo,
-      ),
-    );
+  const deleteTodo = (postId: number) => {
+    setTodosInProcess(currentIds => [...currentIds, postId]);
 
-    try {
-      await deleteTodo(todoId);
-      setTodos(prevTodos => prevTodos.filter(todo => todo.id !== todoId));
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 50);
-    } catch {
-      setError('Unable to delete a todo');
-      setTodos(prevTodos =>
-        prevTodos.map(todo =>
-          todo.id === todoId ? { ...todo, isDeleting: false } : todo,
-        ),
-      );
-    }
-  };
-
-  const clearCompletedTodos = async () => {
-    const completedTodos = todos.filter(todo => todo.completed);
-
-    try {
-      const results = await Promise.allSettled(
-        completedTodos.map(todo => deleteTodo(todo.id)),
-      );
-
-      results.forEach(result => {
-        if (result.status === 'rejected') {
-          setError('Unable to delete a todo');
-        }
+    return todoService
+      .deleteTodos(postId)
+      .then(() => {
+        setTodos(currentTodos =>
+          currentTodos.filter(todo => todo.id !== postId),
+        );
+      })
+      .catch(error => {
+        setErrorMessage('Unable to delete a todo');
+        setTimeout(() => setErrorMessage(''), 3000);
+        throw error;
+      })
+      .finally(() => {
+        setTodosInProcess(currentTodos =>
+          currentTodos.filter(id => id !== postId),
+        );
       });
-
-      setTodos(prevTodos =>
-        prevTodos.filter(
-          todo =>
-            !completedTodos.some(
-              completedTodo =>
-                completedTodo.id === todo.id &&
-                results[completedTodos.indexOf(completedTodo)].status ===
-                  'fulfilled',
-            ),
-        ),
-      );
-
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
-    } catch (errorMessage) {
-      setError('Unable to delete a todo');
-    }
   };
 
-  const handleFormSubmit = async (
-    event: React.FormEvent,
-    focusInput: () => void,
-  ) => {
-    event.preventDefault();
-    await handleAddTodo(newTodoTitle, focusInput);
-  };
+  const filteredTodos = useMemo(() => {
+    return todos.filter(todo => {
+      if (filter === Filter.active) {
+        return !todo.completed;
+      }
 
-  const toggleTodo = (todoId: number) => {
-    setTodos(prevTodos =>
-      prevTodos.map(todo =>
-        todo.id === todoId ? { ...todo, completed: !todo.completed } : todo,
-      ),
-    );
-  };
+      if (filter === Filter.completed) {
+        return todo.completed;
+      }
 
-  const filteredTodos = todos.filter(todo => {
-    if (filter === FilterType.Active) {
-      return !todo.completed;
-    }
+      return true;
+    });
+  }, [todos, filter]);
 
-    if (filter === FilterType.Completed) {
-      return todo.completed;
-    }
-
-    return true;
-  });
+  if (!todoService.USER_ID) {
+    return <UserWarning />;
+  }
 
   return (
     <div className="todoapp">
-      {!USER_ID ? (
-        <UserWarning />
-      ) : (
-        <>
-          <h1 className="todoapp__title">todos</h1>
-          <div className="todoapp__content">
-            <Header
-              newTodoTitle={newTodoTitle}
-              setNewTodoTitle={setNewTodoTitle}
-              handleAddTodo={handleFormSubmit}
-              isLoading={isLoading}
-              todos={todos}
-              inputRef={inputRef}
-            />
+      <h1 className="todoapp__title">todos</h1>
 
-            <TodoList
-              todos={filteredTodos}
-              isLoading={isLoading}
-              tempTodo={tempTodo}
-              handleDeleteTodo={handleDeleteTodo}
-              onToggle={toggleTodo}
-            />
+      <div className="todoapp__content">
+        <Header
+          todos={todos}
+          onErrorMessage={setErrorMessage}
+          onSubmit={addTodo}
+          setTempTodo={setTempTodo}
+        />
 
-            {todos.length > 0 && (
-              <Footer
-                todos={todos}
-                handleClearCompleted={clearCompletedTodos}
-                filter={filter}
-                setFilter={setFilter}
-              />
-            )}
-          </div>
+        <TodoList
+          todos={filteredTodos}
+          tempTodo={tempTodo}
+          onDelete={deleteTodo}
+          todosInProcess={todosInProcess}
+        />
+        {!!todos.length && (
+          <Footer
+            todos={todos}
+            onFilter={setFilter}
+            filter={filter}
+            onDelete={deleteTodo}
+          />
+        )}
+      </div>
 
-          <ErrorNotification error={error} setError={setError} />
-        </>
-      )}
+      <div
+        data-cy="ErrorNotification"
+        className={cn(
+          'notification is-danger is-light has-text-weight-normal',
+          { hidden: !errorMessage },
+        )}
+      >
+        <button
+          data-cy="HideErrorButton"
+          type="button"
+          className="delete"
+          onClick={() => setErrorMessage('')}
+        />
+        {errorMessage}
+      </div>
     </div>
   );
 };
