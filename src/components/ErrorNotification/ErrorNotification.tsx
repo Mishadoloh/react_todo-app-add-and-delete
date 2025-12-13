@@ -1,28 +1,34 @@
-import cn from 'classnames';
-import { ErrorMessageType } from '../../types/ErrorMessageType';
+import React from 'react';
+import classNames from 'classnames';
 
-interface Props {
-  errorMessage: ErrorMessageType;
-  setErrorMessage: (error: ErrorMessageType) => void;
-}
+type Props = {
+  errorMessage: string;
+  isHiddenErrorMessage: boolean;
+};
 
-export const ErrorNotification = ({ errorMessage, setErrorMessage }: Props) => {
+export const ErrorNotifications: React.FC<Props> = ({
+  errorMessage,
+  isHiddenErrorMessage,
+}) => {
   return (
     <div
       data-cy="ErrorNotification"
-      className={cn('notification is-danger is-light has-text-weight-normal', {
-        hidden: errorMessage === ErrorMessageType.NONE,
-      })}
+      className={classNames(
+        'notification is-danger is-light has-text-weight-normal',
+        { hidden: isHiddenErrorMessage },
+      )}
     >
-      <button
-        onClick={() => setErrorMessage(ErrorMessageType.NONE)}
-        data-cy="HideErrorButton"
-        type="button"
-        className="delete"
-        disabled={!errorMessage}
-      />
-
+      <button data-cy="HideErrorButton" type="button" className="delete" />
+      {/* show only one message at a time */}
       {errorMessage}
+      {/* <br />
+        Title should not be empty
+        <br />
+        Unable to add a todo
+        <br />
+        Unable to delete a todo
+        <br />
+        Unable to update a todo */}
     </div>
   );
 };

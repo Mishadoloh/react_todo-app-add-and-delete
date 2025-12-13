@@ -1,56 +1,29 @@
-import { Todo } from '../../types/Todo';
+import React from 'react';
 import { TodoItem } from '../TodoItem';
-import cn from 'classnames';
+import { Todo } from '../../types/Todo';
+import { Filter } from '../../types/Filter';
 
-interface Props {
+type Props = {
+  filter: Filter;
   todos: Todo[];
-  loading: boolean;
-  selected: number | null;
-  handleDoubleClick: (todo: Todo) => void;
-  isSubmitting: boolean;
-  selectedTitle: string;
-  setSelectedTitle: (title: string) => void;
-  deleteTodoHandler: (id: number) => void;
-  deletingTodosId: number[];
-}
+  filterTodos: (value: Todo[] | ((prev: Todo[]) => Todo[])) => void;
+};
 
-export const TodoList = ({
-  todos,
-  loading,
-  selected,
-  handleDoubleClick,
-  isSubmitting,
-  selectedTitle,
-  setSelectedTitle,
-  deleteTodoHandler,
-  deletingTodosId,
-}: Props) => {
-  return (
-    <section className="todoapp__main" data-cy="TodoList">
-      <div
-        data-cy="TodoLoader"
-        className={cn('modal overlay', { 'is-active': loading })}
-      >
-        {/* eslint-disable-next-line max-len */}
-        <div className="modal-background has-background-white-ter" />
-        <div className="loader" />
-      </div>
+export const TodoList: React.FC<Props> = ({ filter, todos, filterTodos }) => {
+  const filteredTodos = todos.filter((todo: Todo) => {
+    if (filter === 'active') {
+      return !todo.completed;
+    }
 
-      {todos.map(todo => {
-        return (
-          <TodoItem
-            key={todo.id}
-            todo={todo}
-            selected={selected}
-            handleDoubleClick={handleDoubleClick}
-            selectedTitle={selectedTitle}
-            setSelectedTitle={setSelectedTitle}
-            isSubmitting={isSubmitting}
-            deleteTodoHandler={deleteTodoHandler}
-            deletingTodosId={deletingTodosId}
-          ></TodoItem>
-        );
-      })}
-    </section>
-  );
+    if (filter === 'completed') {
+      return todo.completed;
+    }
+
+    return true;
+  });
+
+  // eslint-disable-next-line max-len
+  return filteredTodos.map((todo: Todo) => (
+    <TodoItem key={todo.id} todo={todo} filterTodos={filterTodos} />
+  ));
 };

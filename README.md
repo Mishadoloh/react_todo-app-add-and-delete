@@ -59,7 +59,8 @@ Remove all the completed todos after the `Clear completed` button click:
 - Replace `<your_account>` with your Github username in the
 [DEMO LINK](https://Mishadoloh.github.io/react_todo-app-add-and-delete/) and add it to the PR description.
 =======
-- Replace `<your_account>` with your Github username in the [DEMO LINK](https://Mishadoloh.github.io/react_todo-app-add-and-delete/) and add it to the PR description.
+- Replace `<your_account>` with your Github username in the
+[DEMO LINK](https://Mishadoloh.github.io/react_todo-app-add-and-delete/) and add it to the PR description.
 >>>>>>> 5bc2fa08297e70bedca4118482351f7448f76821
 
 ## IF you want to implement smooth animations
